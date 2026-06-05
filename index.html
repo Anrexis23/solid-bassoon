@@ -726,7 +726,8 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === ' ') {
       e.preventDefault();
-      startCountdown();
+      if (!resultsArea.classList.contains('hidden')) btnReplay.click();
+      else startCountdown();
       return;
     }
     if (locked) return;
