@@ -37,7 +37,6 @@
     max-width: 92vw;
     text-align: center;
     box-shadow: var(--shadow);
-    position: relative;
   }
   .theme-toggle {
     position: absolute;
@@ -85,6 +84,20 @@
     user-select: none;
   }
   .card-logo img { width: 26px; height: 26px; border-radius: 6px; }
+  .start-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 80px; height: 80px; border-radius: 50%;
+    font-size: 2.8rem; line-height: 1; padding: 0 0 0 3px;
+    background: var(--btn-bg);
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 25px color-mix(in srgb, var(--accent) 40%, transparent), inset 0 0 15px color-mix(in srgb, var(--accent) 15%, transparent);
+    animation: startPulse 1.5s ease-in-out infinite;
+    margin-bottom: 8px;
+  }
+  @keyframes startPulse {
+    0%, 100% { box-shadow: 0 0 25px color-mix(in srgb, var(--accent) 40%, transparent), inset 0 0 15px color-mix(in srgb, var(--accent) 15%, transparent); transform: scale(1); }
+    50% { box-shadow: 0 0 50px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 0 25px color-mix(in srgb, var(--accent) 25%, transparent); transform: scale(1.05); }
+  }
   .card-logo span {
     font-size: 1rem;
     font-weight: 700;
@@ -221,15 +234,6 @@
     display: none;
   }
   .next-btn:hover { background: var(--accent-hover); transform: scale(1.03); }
-  .star-burst {
-    position: fixed; top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none; z-index: 999;
-  }
-  .star-burst span {
-    position: absolute; font-size: 2rem;
-    animation: shoot 1s ease-out forwards;
-  }
   .bg-icon {
     position: fixed; font-size: 2.4rem;
     opacity: 0.25; pointer-events: none;
@@ -246,7 +250,6 @@
     0% { opacity: 1; transform: translate(0,0) scale(1); }
     100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(0); }
   }
-  @keyframes shoot { 0% { opacity:1; transform:translate(0,0) scale(0.5); } 100% { opacity:0; transform:translate(var(--x),var(--y)) scale(1.4); } }
   @keyframes floatAround { 0% { transform:translate(0,0) rotate(0deg); } 25% { transform:translate(50px,-60px) rotate(90deg); } 50% { transform:translate(-30px,-100px) rotate(180deg); } 75% { transform:translate(-60px,-30px) rotate(270deg); } 100% { transform:translate(0,0) rotate(360deg); } }
   @keyframes pop { 0% { transform:scale(1); } 50% { transform:scale(1.06); } 100% { transform:scale(1); } }
   .results { padding: 10px 0; }
@@ -378,7 +381,7 @@
 
   let mode = 'infinito';
   let streak = 0, bestStreak = 0, stars = 0, locked = false;
-  let timerId = null, timeLeft = 60, score = 0, attempts = 0;
+  let timerId = null, timeLeft = 60, score = 0, attempts = 0, timerStarted = false;
   let respTimes = [], questionStart = 0;
   let soundEnabled = true, audioCtx = null;
   let q = newQuestion();
@@ -411,7 +414,6 @@
   const soundToggle = document.getElementById('soundToggle');
   const finalAvgTime = document.getElementById('finalAvgTime');
   const tierEl = document.getElementById('tier');
-  const burstEmojis = ['⭐', '🌟', '✨', '💫'];
   const bgIcons = ['🧮', '🔢', '➗', '✖️', '➕', '➖', '🔣', '∞'];
   const themeNames = ['dark', 'light', 'neon', 'ocean', 'sunset', 'forest'];
   const themeIcons = ['🌙', '☀️', '💜', '🌊', '🌅', '🌲'];
@@ -436,23 +438,6 @@
     }
   }
 
-  function showStarBurst() {
-    const container = document.createElement('div');
-    container.className = 'star-burst';
-    for (let i = 0; i < 16; i++) {
-      const s = document.createElement('span');
-      s.textContent = burstEmojis[i % burstEmojis.length];
-      s.style.left = (30 + Math.random() * 40) + 'vw';
-      s.style.top = (30 + Math.random() * 20) + 'vh';
-      s.style.setProperty('--x', (-200 + Math.random() * 400) + 'px');
-      s.style.setProperty('--y', (-300 + Math.random() * 100) + 'px');
-      s.style.animationDelay = (Math.random() * 0.3) + 's';
-      container.appendChild(s);
-    }
-    document.body.appendChild(container);
-    setTimeout(() => container.remove(), 1400);
-  }
-
   function addBgIcon() {
     const el = document.createElement('div');
     el.className = 'bg-icon';
@@ -471,7 +456,7 @@
 
   function updateBg(s) {
     const idx = Math.min(Math.floor(s / 10), streakHues.length - 1);
-    const glow = `0 0 30px ${streakHues[idx]}deg rgba(251,191,36,0.15)`;
+    const glow = `0 0 30px ${streakHues[idx]}deg color-mix(in srgb, var(--accent) 30%, transparent)`;
     cardEl.style.boxShadow = `var(--shadow), ${glow}`;
   }
 
@@ -571,11 +556,18 @@
     cardEl.classList.remove('tension', 'tension-fast', 'tension-extreme');
     cardEl.classList.add('calm');
     if (m === 'reloj') {
-      timeLeft = 60; score = 0; attempts = 0;
+      timeLeft = 60; score = 0; attempts = 0; timerStarted = false;
       respTimes = [];
       timerDisplay.textContent = timeLeft;
       timerDisplay.className = 'timer-display';
       scoreEl.textContent = '0';
+      questionEl.innerHTML = '<span class="start-icon">⚡</span><br>¿Preparado?';
+      optionsEl.innerHTML = '';
+      feedbackEl.textContent = 'Pulsa ESPACIO para empezar';
+      nextBtn.style.display = 'none';
+      locked = false;
+      updateBg(0);
+      return;
     }
     if (m === 'pct') {
       streak = 0; bestStreak = 0; stars = 0;
@@ -588,10 +580,14 @@
     updateBg(0);
     q = m === 'pct' ? newPctQuestion() : newQuestion();
     render();
+  }
 
-    if (m === 'reloj') {
-      timerId = setInterval(tick, 1000);
-    }
+  function startCountdown() {
+    if (mode !== 'reloj' || timerStarted) return;
+    timerStarted = true;
+    q = newQuestion();
+    render();
+    timerId = setInterval(tick, 1000);
   }
 
   function tick() {
@@ -728,6 +724,11 @@
   });
 
   document.addEventListener('keydown', (e) => {
+    if (e.key === ' ') {
+      e.preventDefault();
+      startCountdown();
+      return;
+    }
     if (locked) return;
     const map = { 'q': 0, 'w': 1, 'n': 2, 'm': 3 };
     const idx = map[e.key.toLowerCase()];
@@ -743,6 +744,7 @@
   btnReplay.addEventListener('click', () => setMode('reloj'));
   themeToggle.addEventListener('click', toggleTheme);
   soundToggle.addEventListener('click', toggleSound);
+  questionEl.addEventListener('click', startCountdown);
 
   const savedTheme = localStorage.getItem('math-theme');
   if (savedTheme) { const i = themeNames.indexOf(savedTheme); if (i >= 0) setTheme(i); }
