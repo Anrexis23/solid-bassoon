@@ -475,7 +475,7 @@
     cardEl.style.boxShadow = `var(--shadow), ${glow}`;
   }
 
-  const keyLabels = ['1', '2', '3', '4'];
+  const keyLabels = ['Q', 'W', 'N', 'M'];
   const qualityTiers = [
     [0, ''], [7, '💩 Impuro'], [14, '🥴 Muy pobre'], [21, '😕 Pobre'],
     [28, '🤒 Deficiente'], [35, '👎 Inferior'], [42, '🫤 Común'],
@@ -729,8 +729,9 @@
 
   document.addEventListener('keydown', (e) => {
     if (locked) return;
-    const idx = parseInt(e.key) - 1;
-    if (idx >= 0 && idx < 4) {
+    const map = { 'q': 0, 'w': 1, 'n': 2, 'm': 3 };
+    const idx = map[e.key.toLowerCase()];
+    if (idx !== undefined) {
       const btns = optionsEl.querySelectorAll('button');
       if (btns[idx]) btns[idx].click();
     }
